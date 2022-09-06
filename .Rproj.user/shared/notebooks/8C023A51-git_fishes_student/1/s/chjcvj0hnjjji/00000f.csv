@@ -1,0 +1,6 @@
+"0",""
+"0","path <- ""./output/data/change92.csv"""
+"0",""
+"0",""
+"0","write_csv(data, file = path)"
+"0",""

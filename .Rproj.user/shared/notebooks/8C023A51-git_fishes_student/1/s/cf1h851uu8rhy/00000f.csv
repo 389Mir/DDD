@@ -1,0 +1,19 @@
+"0",""
+"0","path <- ""./data/OA_activitydat_20190302_BIOL3207.csv"""
+"0","  "
+"0","data <- read_csv(path)"
+"2","
+[36m--[39m [1mColumn specification[22m [36m------------------------------------------------[39m
+cols(
+  X1 = [32mcol_double()[39m,
+  loc = [31mcol_character()[39m,
+  species = [31mcol_character()[39m,
+  treatment = [31mcol_character()[39m,
+  animal_id = [32mcol_double()[39m,
+  sl = [32mcol_double()[39m,
+  size = [31mcol_character()[39m,
+  activity = [32mcol_double()[39m,
+  comment = [31mcol_character()[39m
+)
+
+"
