@@ -161,7 +161,7 @@ flextable(
 >**Question 5**: The new version of your Rmarkdown file should now be up on *GitHub*. In the browser window click on your most recent commit. Have a look at the file versioning system. You will notice two files side-by-side. Describe what you notice is being presented online. What do the red and green highlights mean?
 
 ```{r answer5, echo=TRUE, eval=FALSE}
-## Write your answer here....remember to use '#" in front of your text.
+## Red highlights indicate that they have not been added to version control and has just been cloned locally. While the green highlights indicate that they have been added to version control, is a new part but has not yet been submitted.
 ```
 
 # **Task 5**
@@ -172,25 +172,41 @@ Ignoring figures can be important because they take up quite a lot of space in y
 
 ```{r, prettyfig, fig.align='center', fig.cap="add a legend here"}
 # ggplot figure showing mean activity for each treatment (Control, OA) for each species.
-
-
+ggplot(data = data2, aes(x = treatment, y = mean_activity, color = species)) + geom_boxplot()
 ```
 
 **Stretch Task**: The Clark et al. 2020 paper plots some pretty pictures on their figures. You have access to a folder called "pics/". Add the pics of the difference species from the "pics/" folder to your new plot. Explore the function `annotation_raster()` which might help you achieve this goal.
+
+```{r}
+picture1 <- readPNG("./pics/acantho.png")
+picture2 <- readPNG("./pics/lemon.png")
+picture3 <- readPNG("./pics/ambon.png")
+picture4 <- readPNG("./pics/humbug.png")
+picture5 <- readPNG("./pics/chromis.png")
+picture6 <- readPNG("./pics/whitedams.png")
+ggplot1 <- ggplot(data = data2, mapping = aes(x = species, y = mean_activity, color = treatment)) +
+  geom_boxplot() + annotation_raster(picture1, 0.7, 1.3, 20, 25) + annotation_raster(picture2, 1.7, 2.3, 20, 25) + annotation_raster(picture3, 2.7, 3.3, 20, 25) + annotation_raster(picture4, 3.7, 4.3, 20, 25) + annotation_raster(picture5, 4.7, 5.3, 20, 25) + annotation_raster(picture6, 5.7, 6.3, 20, 25)
+ggplot1
+```
 
 Note the code chunk used to make the figure. It has a `fig.cap` argument. That means Rmarkdown knows it's a figure and it will allow you to create a figure reference call. In other words, we can refer to our Figure \@ref(fig:prettyfig) by referring to the label for the chunk. This will automatically make a legend for us too (assuming you add one in). The same concept applied to Tables but the legend goes above these.
 
 Now that you have the figure you may also want to write / save it as a separate file. Use `ggsave` function to save the figure(s) to your new `output/figures/`:
 
-```{r, savefig}
-# Use ggsave to save the figure
 
+```{r}
+# Use ggsave to save the figure
+setwd("./output/figures")
+ggplot2 = ggplot(data = data2, aes(x = treatment, y = mean_activity, color = species)) + geom_boxplot()
+ggplot2
+
+ggsave("plot.png",ggplot2 )
 ```
 
 >**Question 6**: Given that you have added `output/figures/` to your `.gitignore` file describe what you notice about what you see in *GitHub Desktop*. 
 
 ```{r}
-## Write your answer here
+## I can see the saved image and save path before adding it. But once in ".gitignore", there is no way to push the image or directory to the remote repository. The purpose of the ".gitignore" file is to specify that Git does not track the file.
 ```
 
 Last question for this task. I promise! It's important to think very carefully about what you track and ignore.
@@ -198,7 +214,7 @@ Last question for this task. I promise! It's important to think very carefully a
 >**Question 7**: Assume that you added the `pics/` folder to your working directory to plot pictures of each fish on your figure. Do you want to track the files in the pic/ folder on GitHub despite them being .png files? Explain your reasoning. 
 
 ```{r, answer6}
-## Add your answer here
+## I don't want it to track because I saved it as an image, but even though other people in the cloud can track my save path and results, they can't change the image. Tracking is best if it can be changed, but this one doesn't have to be.
 ```
 
 # **Task 6**
@@ -208,8 +224,18 @@ Now, lets create a new figure in the code block below that simplifies the one pr
 
 ```{r, collabFig, echo=TRUE, eval=TRUE}
 # You want to make changes to your collaborators figure in Task 5. Maybe you want to create a figure that focuses only on three fish species instead of the 5. More specifically, chromis, lemon, and acantho. Add code here to revise their figure to do that.
-```
 
+data3 <- data2 %>% filter(species=="chromis")
+data4 <- data2 %>% filter(species=="lemon")
+data5 <- data2 %>% filter(species=="acantho")
+mydata <- rbind(data3,data4,data5)
+mydata
+
+ggplot(data = mydata, aes(x = species, y = mean_activity, color = treatment)) +
+  geom_boxplot()+annotation_raster(picture1,0.7,1.3,19,21)+annotation_raster(picture3,1.7,2.3,19,21)+annotation_raster(picture5,2.7,3.3,19,21)
+
+
+```
 
 # **Task 7**
 This task involves creating and resolving conflicts. Conflicts in files are denoted with specific markers. They look like this when you open a file with conflicts.
@@ -242,13 +268,39 @@ Here, run some statistical tests to determine, for each species, whether the con
 
 >**Stretch Task**: You can of course do this for each species seperately, but those who want a challenge, think about how you might use a loop or even some wrangling methods you have already learnt from the tidyverse to run these tests across all 6 species in a single block of code. If you're familiar with functions, you can even think about writing your own function! All these strategies will avoid having to copy and paste large chunks of code. If you're repeating anything, writing functions and loops are good ways to simplify.
 
-```{r, stats, echo=TRUE, eval=TRUE}
-# Add your code here
+```{r}
+data6 <- data1 %>% select("species", "treatment", "animal_id", "activity")
+data7 <- data6[which(data6$species=='chromis'),]
+data8 <- data6[which(data6$species=='ambon'),]
+data9 <- data6[which(data6$species=='humbug'),]
+data10 <- data6[which(data6$species=='lemon'),]
+data11 <- data6[which(data6$species=='acantho'),]
+data12 <- data6[which(data6$species=='whitedams'),]
+
+
+data71<-t.test(data7$activity ~ data7$treatment)
+data71
+data81 <- t.test(data8$activity ~ data8$treatment)
+data81
+data91 <- t.test(data9$activity ~ data9$treatment)
+data91
+data101 <- t.test(data10$activity ~ data10$treatment)
+data101
+data111 <- t.test(data11$activity ~ data11$treatment)
+data111
+data121 <- t.test(data12$activity ~ data12$treatment)
+data121
+data_statistic <- c(data71$statistic, data81$statistic, data91$statistic, data101$statistic, data111$statistic, data121$statistic)
+data_pvalue <- c(data71$p.value, data81$p.value, data91$p.value, data101$p.value, data111$p.value, data121$p.value)
+data_df <- c(data71$parameter, data81$parameter, data91$parameter, data101$parameter, data111$parameter, data121$parameter)
 ```
 
 ```{r, table1, echo=TRUE, eval=TRUE, tab.cap = "write a caption here"}
 # Using the resulting object created above, which should be a table with all the summary statistics, t, df and p-value for each species create a table. Note that there is a tab.cap argument in the chunk arguments. Write a caption here. 
+species <- c('chromis','ambon','humbug','lemon','acantho','whitedams')
+tibble(species,data_statistic,data_pvalue,data_df)
 ```
+
 
 Now that you have a table, you can reference it within a document. For example, you can make a call to Table \@ref(tab:table1) by referring to the name of the code chunk. When you knit the html it will create a hyperlink to your table and insert a legend above the table for you. How cool is that!?
 
@@ -265,6 +317,7 @@ Mean activity for `r "species name here"` in the control group was `r "add code 
 Now, using what you just learnt, describe what the null hypothesis being tested was and provide statistical evidence (t-statistic, df, and p-value) to support your conclusion about whether we can reject the null hypothesis. Again, make sure you use in-line code. Write you answer below:
 
 **Write your answer here**
+I am most interested in "humbug", which has an average of 40 for the CO2 group treatment and 36 for the control group treatment, so the difference in mean is 4. The 95% confidence intervals for their differences were (-0.29, 8.4). Assuming no relationship between control and CO2 treatment, the above analysis yielded t=1.85, p=0.067, df=137. Because the p-value is greater than 0.05, it indicates no significant difference. According to the t value and df, the table shows that there is no significant difference between the control and CO2 treatments. So we accept our null hypothesis. I was more interested in the Humbug species because none of them had a p-value greater than 0.05, so it was more general.
 
 
 Re-analyse the data for a single species using permutations instead of a t-test. Do your results differ?

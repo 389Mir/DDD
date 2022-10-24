@@ -1,0 +1,2 @@
+"0","# ggplot figure showing mean activity for each treatment (Control, OA) for each species."
+"0","ggplot(data = data2, aes(x = treatment, y = mean_activity, color = species)) + geom_boxplot()"

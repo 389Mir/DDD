@@ -1,0 +1,7 @@
+"0","# You want to make changes to your collaborators figure in Task 5. Maybe you want to create a figure that focuses only on three fish species instead of the 5. More specifically, chromis, lemon, and acantho. Add code here to revise their figure to do that."
+"0",""
+"0","data3 <- data2 %>% filter(species==""chromis"")"
+"0","data4 <- data2 %>% filter(species==""lemon"")"
+"0","data5 <- data2 %>% filter(species==""acantho"")"
+"0","mydata <- rbind(data3,data4,data5)"
+"0","mydata"

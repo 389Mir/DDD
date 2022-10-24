@@ -1,0 +1,5 @@
+"0","# Use ggsave to save the figure"
+"0","setwd(""./output/figures"")"
+"2","Warning: The working directory was changed to D:/Users/17964/Documents/GitHub/DDD/output/figures inside a notebook chunk. The working directory will be reset when the chunk is finished running. Use the knitr root.dir option in the setup chunk to change the working directory for notebook chunks."
+"0","ggplot2 = ggplot(data = data2, aes(x = treatment, y = mean_activity, color = species)) + geom_boxplot()"
+"0","ggplot2"

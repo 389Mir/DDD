@@ -3,7 +3,7 @@
 "0","  "
 "0","data <- read_csv(path)"
 "2","
-[36m--[39m [1mColumn specification[22m [36m------------------------------------------------[39m
+[36m--[39m [1mColumn specification[22m [36m-------------------------------------[39m
 cols(
   X1 = [32mcol_double()[39m,
   loc = [31mcol_character()[39m,
