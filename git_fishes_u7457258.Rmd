@@ -172,7 +172,8 @@ Ignoring figures can be important because they take up quite a lot of space in y
 
 ```{r, prettyfig, fig.align='center', fig.cap="add a legend here"}
 # ggplot figure showing mean activity for each treatment (Control, OA) for each species.
-ggplot(data = data2, aes(x = treatment, y = mean_activity, color = species)) + geom_boxplot()
+ggplot(data = data2, aes(x = treatment, y = mean_activity, color = species)) +
+  geom_boxplot()
 ```
 
 **Stretch Task**: The Clark et al. 2020 paper plots some pretty pictures on their figures. You have access to a folder called "pics/". Add the pics of the difference species from the "pics/" folder to your new plot. Explore the function `annotation_raster()` which might help you achieve this goal.

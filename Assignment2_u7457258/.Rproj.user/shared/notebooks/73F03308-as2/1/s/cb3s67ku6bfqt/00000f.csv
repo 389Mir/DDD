@@ -1,0 +1,3 @@
+"0","data_com_news1 <- data_com_new %>% filter(!is.na(ctrl.mean))"
+"0","data_com_news2 <- data_com_news1 %>% filter(!is.na(oa.mean))"
+"0","data_com_news2"

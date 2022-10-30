@@ -1,0 +1,2 @@
+"0","data_com <- merge(clark_data, result_new, all = T)"
+"0","data_com[,c(1:16,22,20,21,19,17,18)]"

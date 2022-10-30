@@ -1,0 +1,262 @@
+---
+title: "Assignment2_u7457258"
+author: "Tianyun Dong"
+date: "2022-10-24"
+output: html_document
+---
+
+#### 我的Github地址
+
+[My GitHub Repository](https://github.com/389Mir/DDD.git)
+
+
+```{r message=FALSE}
+library(tidyverse)
+library(flextable)
+library(metafor)
+library(pacman)
+
+# Install bookdown for rendering because we'll need this. While we're at it,
+# lets also install /load the tidyverse
+p_load(bookdown, devtools, tidyverse, ggforce, GGally, flextable, latex2exp, png,
+    magick, metafor, MASS, emmeans, R.rsp)  # basically just list all the packages you want here
+
+# Install the orchaRd package
+devtools::install_github("daniel1noble/orchaRd", force = TRUE)
+library(orchaRd)
+```
+
+#### 首先读取"OA_activitydat_20190302_BIOL3207.csv"数据库。
+
+```{r message=FALSE}
+data1 <- "OA_activitydat_20190302_BIOL3207.csv"
+OA_data <- read_csv(data1)
+
+OA_data
+```
+
+
+#### 进行数据处理，删除activity一列中数据为空的值。
+
+```{r}
+OA_data_1 <- OA_data %>% filter(!is.na(activity))
+OA_data_1
+```
+
+
+#### 对数据处理的解释
+
+```{r}
+#### 因为animal_id中的数据不是我所需要观察的，这只是一个名字体现它的身份。该数据体现不了实验的处理对生物的影响，所以即使缺失也没关系。而我需要activity中的数据，所以如果缺失需要删除这一行。
+```
+
+
+#### 删除不必要的列并且检查关键内容“物种”和“treatment”的拼写记录是否错误。
+
+```{r}
+# Drop irrelevant columns.
+OA_data_1 %>% select("species", "treatment", "animal_id", "activity")
+# Check spelling in species and treatment
+OA_data_1 %>% count(species)
+OA_data_1 %>% count(treatment)
+```
+
+
+#### 按不同的species和treatment进行分类处理它们对于的N值总量、平均值和标准差的值，并生成汇总表。
+
+
+
+```{r message=FALSE}
+# Generate a summary table
+OA_data_new <- OA_data_1 %>% group_by(species, treatment) %>% summarise(mean_activity = mean(activity), sd_activity = sd(activity), N = length(species))
+OA_data_new
+# Use flextable to render the summary table in a tidy format
+flextable(
+  OA_data_new,
+  col_keys = names(OA_data_new),
+  cwidth = 0.75,
+  cheight = 0.25,
+  defaults = list(),
+  theme_fun = theme_booktabs
+)
+```
+
+
+#### 将相同物种的数值合并成一行。
+
+```{r}
+## 生成母版
+result <- data.frame()    
+## 行数缩减1倍
+for (i in 1:(nrow(OA_data_new)/2)) {                    
+  data_new <- c(OA_data_new[2 * i - 1,], OA_data_new[2 * i,]) ##两行合并为一个向量
+  result <- rbind(result, data_new)                ## 添加到数据框
+}
+result
+```
+
+
+#### 删去多余的列
+
+```{r}
+result_new <- result[,c(-2, -6, -7)]
+result_new
+```
+
+
+#### 更改上述新表的列名，将每一列数据所代表的含义与"ocean_meta_data.csv"的列名相对应。
+
+```{r}
+colnames(result_new)[1] <- "Species"
+colnames(result_new)[2] <- "oa.mean"
+colnames(result_new)[3] <- "oa.sd"
+colnames(result_new)[4] <- "oa.n"
+colnames(result_new)[5] <- "ctrl.mean"
+colnames(result_new)[6] <- "ctrl.sd"
+colnames(result_new)[7] <- "ctrl.n"
+result_new
+```
+
+
+#### 读取"clark_paper_data.csv"文档。
+
+```{r message=FALSE}
+data2 <- "clark_paper_data.csv"
+clark_data <- read_csv(data2)
+clark_data
+```
+
+# 将产生的汇总统计与"clark_paper_data.csv"合并，并调整每一列的顺序使之与"ocean_meta_data.csv"的列顺序一致。
+
+```{r}
+data_com <- merge(clark_data, result_new, all = T)
+data_com[,c(1:16,22,20,21,19,17,18)]
+```
+
+
+#### 读取"ocean_meta_data.csv"
+
+```{r message=FALSE}
+data3 <- "ocean_meta_data.csv"
+ocean_data <- read_csv(data3)
+ocean_data
+```
+
+
+
+
+#### 将上面合并后的数据合并到较大的数据集"ocean_meta_data.csv"中，并将其命名为“data_com_new”
+
+```{r}
+data_com_new <- merge(ocean_data, data_com, all = T)
+data_com_new
+```
+
+
+#### 先去除所有负数，因为。。。
+
+```{r}
+data_com_new[data_com_new < 0] = NA
+data_com_new
+```
+
+```{r}
+data_com_new %>% count(is.na(ctrl.mean))
+data_com_new %>% count(is.na(ctrl.sd))
+data_com_new %>% count(is.na(oa.mean))
+data_com_new %>% count(is.na(oa.sd))
+```
+
+```{r}
+data_com_news1 <- data_com_new %>% filter(!is.na(ctrl.mean))
+data_com_news2 <- data_com_news1 %>% filter(!is.na(oa.mean))
+data_com_news2
+```
+
+```{r}
+data_com_news2 = escalc(measure = "ROM", n1i = ctrl.n, m1i = ctrl.mean, sd1i = ctrl.sd, n2i = oa.n, m2i = oa.mean, sd2i = oa.sd, data = data_com_news2, append = TRUE)
+data_com_news2
+```
+
+
+
+```{r}
+MLMA <- metafor::rma.mv(yi ~ 1, V = vi, method = "REML", random = list(~1 | Study), dfs = "contain", test = "t", data = data_com_news2)
+MLMA
+
+```
+
+
+```{r}
+a) 正确表述和解释总体荟萃分析平均值和围绕平均值估计的不确定性措施（例如，95%的置信区间）。
+# 我们可以使用该函数提取估计值，估计为 0.0257，这告诉我们平均 activity 值为正
+# We can extract the estimate using the function, it is estimated to be 0.0257, which tells us that the mean activity value is positive.
+
+# 我们可以提取 95% 置信区间，范围从 0.029 到 0.167。换句话说，95% 的情况下，我们预计真实均值介于 0.029 到 0.167 的 Zr 值之间。换句话说，如果我们多次重复实验，构建的置信区间中有95%将包含真正的meta分析平均值。
+# we can extract the 95% confidence intervals which range from -0.2770 to 0.3285 . In other words, 95% of the time we would expect the true mean to fall between Zr values of -0.2770 to 0.3285. In other words, if we were to repeat the experiment many times, 95% of the confidence intervals constructed would contain the true meta-analytic mean.
+
+# 我们还可以看到，lnRR = 0???? 的原假设可以接受，因为有一个明显大于相关性 0 的估计值，我们可以从 p 值> 0.05 中看到。更准确地说，p 值为 0.8664。
+# We can also see that the null hypothesis that lnRR = 0 can be rejected because there is a significantly larger estimate than a correlation of 0, which we can see from the p-value being > 0.05. To be more exact, the p-value is 0.8664.
+
+
+```
+
+
+
+```{r}
+predict(MLMA)
+
+# 如果荟萃分析均值Zr为0.0257
+# 我们的 95% 预测区间很宽。通过重复实验，效应大小（lnRR）预计在95%的时间内范围为-2.8681至2.9195，这表明研究之间存在很多一致。
+```
+
+
+
+```{r}
+# Make an orchard plot using the model object
+orchaRd::orchard_plot(MLMA, group = "Study", data = data_com_news2,
+    xlab = "lnRR-Transformed Correlation Coefficient (lnRR)", angle = 45)
+
+
+# 果园图显示了生理与活动、扩散和行为之间估计的相关系数的平均 Zr。k = 效应量的数量和研究的数量在括号中。效果的大小按每个效果大小值的精度缩放，即 1 / sqrt（v_Zr）
+```
+
+```{r}
+# Lets make a funnel plot to visualize the data in relation to the precision,
+# inverse sampling standard error,
+metafor::funnel(x = data_com_news2$yi, vi = data_com_news2$vi, yaxis = "seinv",
+    digits = 2, level = c(0.1, 0.05, 0.01), shade = c("white", "gray55", "gray 75"),
+    las = 1, xlab = "Correlation Coefficient (r)", atransf = tanh, legend = TRUE,ylim = c(1,100))
+```
+
+
+```{r}
+ggplot(data_com_news2, aes(y = yi, x = Year..print., size = 1/sqrt(vi))) + geom_point(alpha = 0.3) +
+    geom_smooth(method = lm, col = "red", show.legend = FALSE) + labs(x = "Publication Year",
+    y = "Fisher's Z-transformed Correlation Coefficient (Zr)", size = "Precision (1/SE)") +
+    theme_classic()
+
+```
+
+```{r}
+metareg_time <- rma.mv(yi ~ Year..print., V = vi, random = list(~1 | Study),
+    test = "t", dfs = "contain", data = data_com_news2)
+summary(metareg_time)
+```
+
+
+```{r}
+r2_time <- orchaRd::r2_ml(metareg_time)
+r2_time
+```
+
+
+```{r}
+metareg_time1 <- rma.mv(yi ~ Year..print. + vi, V = vi, random = list(~1 | Study),
+    test = "t", dfs = "contain", data = data_com_news2)
+summary(metareg_time1)
+
+```
+
+
+

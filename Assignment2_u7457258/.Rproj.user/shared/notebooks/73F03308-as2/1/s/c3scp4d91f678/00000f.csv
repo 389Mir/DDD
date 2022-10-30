@@ -1,0 +1,2 @@
+"0","# Drop irrelevant columns."
+"0","OA_data_1 %>% select(""species"", ""treatment"", ""animal_id"", ""activity"")"

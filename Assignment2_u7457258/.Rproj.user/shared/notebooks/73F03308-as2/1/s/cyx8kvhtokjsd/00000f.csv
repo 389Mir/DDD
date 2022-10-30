@@ -1,0 +1,4 @@
+"0","data_com_news2 = escalc(measure = ""ROM"", n1i = ctrl.n, m1i = ctrl.mean, sd1i = ctrl.sd, n2i = oa.n, m2i = oa.mean, sd2i = oa.sd, data = data_com_news2, append = TRUE)"
+"0","data_com_news2"
+"1","
+"

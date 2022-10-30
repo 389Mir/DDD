@@ -1,0 +1,8 @@
+"0","## 生成母版"
+"0","result <- data.frame()    "
+"0","## 行数缩减1倍"
+"0","for (i in 1:(nrow(OA_data_new)/2)) {                    "
+"0","  data_new <- c(OA_data_new[2 * i - 1,], OA_data_new[2 * i,]) ##两行合并为一个向量"
+"0","  result <- rbind(result, data_new)                ## 添加到数据框"
+"0","}"
+"0","result"

@@ -1,0 +1,5 @@
+"0","ggplot(data_com_news2, aes(y = yi, x = Year..print., size = 1/sqrt(vi))) + geom_point(alpha = 0.3) +"
+"0","    geom_smooth(method = lm, col = ""red"", show.legend = FALSE) + labs(x = ""Publication Year"","
+"0","    y = ""Fisher's Z-transformed Correlation Coefficient (Zr)"", size = ""Precision (1/SE)"") +"
+"0","    theme_classic()"
+"0",""

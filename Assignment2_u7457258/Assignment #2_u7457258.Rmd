@@ -1,0 +1,276 @@
+---
+title: "Assignment2_u7457258"
+author: "Tianyun Dong"
+date: "2022-10-24"
+output: html_document
+---
+
+#### My GitHub address.
+
+[My GitHub Repository](https://github.com/389Mir/DDD.git)
+
+
+#### Install all the packages I need.
+
+```{r message=FALSE}
+options(warn = -1)
+library(pacman)
+
+p_load(bookdown, devtools, tidyverse, ggforce, GGally, flextable, 'plotrix', dplyr, latex2exp, png,
+    magick, metafor, MASS, emmeans, R.rsp)  
+
+devtools::install_github("daniel1noble/orchaRd", force = TRUE)
+library(orchaRd)
+```
+
+#### First read the "OA_activitydat_20190302_BIOL3207.csv" database.
+
+```{r message=FALSE}
+data1 <- "OA_activitydat_20190302_BIOL3207.csv"
+OA_data <- read_csv(data1)
+OA_data
+```
+
+
+#### Perform data processing. 
+#### Remove values in the `activity` column that have empty data. Remove unnecessary columns and check for misspellings of the key elements `species` and `treatment`.
+
+```{r}
+# Because I need to process and evaluate the data based on what is in the activity, I need to delete this line if it is missing.
+OA_data_1 <- OA_data %>% filter(!is.na(activity))
+```
+
+```{r}
+# These are the summary statistics I need, so filter them out.
+subset(OA_data_1, select = c("species", "treatment", "animal_id", "activity"))
+
+
+# Check for errors in key information.
+OA_data_1 %>% count(species)
+OA_data_1 %>% count(treatment)
+```
+
+
+
+
+#### Sorting by different `species` and `treatments`, processing their values of total `N` values, `mean` and `sd`, and generating summary tables.
+
+```{r message=FALSE}
+# Generate a summary table
+OA_data_new <- OA_data_1 %>% group_by(species, treatment) %>% summarise(mean_activity = mean(activity), sd_activity = sd(activity), N = length(species))
+OA_data_new
+# Use flextable to render the summary table in a tidy format
+flextable(
+  OA_data_new,
+  col_keys = names(OA_data_new),
+  cwidth = 0.75,
+  cheight = 0.25,
+  defaults = list(),
+  theme_fun = theme_booktabs
+)
+```
+
+
+#### Combine the values of the same `species` into one row.
+
+```{r}
+# Generate the motherboard。
+result <- data.frame()    
+# The number of rows is reduced by a factor of 1。
+for (i in 1:(nrow(OA_data_new)/2)) {                    
+  data_new <- c(OA_data_new[2 * i - 1,], OA_data_new[2 * i,]) 
+  result <- rbind(result, data_new)                
+}
+result
+```
+
+
+#### Delete the redundant columns, and change the column names of the new table, so that the meaning of each column corresponds to the column name of "ocean_meta_data.csv".
+
+```{r}
+result_new <- result[,c(-2, -6, -7)]
+colnames(result_new)[1] <- "Species"
+colnames(result_new)[2] <- "oa.mean"
+colnames(result_new)[3] <- "oa.sd"
+colnames(result_new)[4] <- "oa.n"
+colnames(result_new)[5] <- "ctrl.mean"
+colnames(result_new)[6] <- "ctrl.sd"
+colnames(result_new)[7] <- "ctrl.n"
+result_new
+```
+
+
+#### Read the "clark_paper_data.csv" database.
+
+```{r message=FALSE}
+data2 <- "clark_paper_data.csv"
+clark_data <- read_csv(data2)
+clark_data
+```
+
+#### Combine the resulting summary statistics with "clark_paper_data.csv" and reorder each column to match the column order of "ocean_meta_data.csv".
+
+```{r}
+data_com <- merge(clark_data, result_new, all = T)
+data_com[,c(1:16,22,20,21,19,17,18)]
+```
+
+
+#### Read the "ocean_meta_data.csv" database.
+
+```{r message=FALSE}
+data3 <- "ocean_meta_data.csv"
+ocean_data <- read_csv(data3)
+ocean_data
+```
+
+
+#### Combine the above merged data "data_com" into the larger dataset "ocean_meta_data.csv" and name it "data_com_new".
+
+```{r}
+data_com_new <- merge(ocean_data, data_com, all = T)
+```
+
+
+#### Remove all negative numbers first. Because `activity` is the number of seconds the fish was active per minute, averaged across the duration of the trial. Therefore, the `activity` cannot be negative. And the `mean` and `sd` cannot be negative.
+
+```{r}
+# All negative values in the data are equal to NA.
+data_com_new[data_com_new < 0] = NA 
+
+# See which columns of the data  have NA values.
+data_com_new %>% count(is.na(ctrl.mean))
+data_com_new %>% count(is.na(ctrl.sd))
+data_com_new %>% count(is.na(oa.mean))
+data_com_new %>% count(is.na(oa.sd))
+```
+
+
+#### Delete the rows with NA in the `mean` and `sd` in turn.
+
+```{r}
+data_com_news1 <- data_com_new %>% filter(!is.na(ctrl.mean))
+data_com_news2 <- data_com_news1 %>% filter(!is.na(oa.mean))
+```
+
+
+#### Now that we have all the data in order, they are summarized in "data_com_news2". Next, these data are processed and analyzed.
+#### First, correctly calculate the `log response ratio (lnRR)` effect size of each row in the data frame.
+
+```{r warning=FALSE}
+data_com_news2 = escalc(measure = "ROM", n1i = ctrl.n, m1i = ctrl.mean, sd1i = ctrl.sd, n2i = oa.n, m2i = oa.mean, sd2i = oa.sd, data = data_com_news2, append = TRUE)
+```
+
+
+#### Correct meta-analytic model fitted to the data that controls for the sampling variance of `lnRR`.
+
+```{r}
+data_com_news2 <- data_com_news2 %>% filter(!is.na(Behavioural.metric))
+```
+
+```{r}
+mam <- metafor::rma.mv(yi ~ 1, V = vi, method = "REML", random = list(~1 | Study,~1|Behavioural.metric), dfs = "contain", test = "t", data = data_com_news2)
+mam
+```
+
+
+#### Survey results and implications.
+
+```{r}
+# a) We can extract the estimate using the function, which is estimated to be 0.1009 and tells us that the mean lnRR value is positive.
+
+# We can obtain the 95% confidence intervals which range from 0.0183 to 0.1836. And 95% of the time we would expect the true mean to fall between lnRR values of 0.0183 to 0.1836. What's more, if we were to repeat the experiment many times, 95% of the confidence intervals constructed would contain the true meta-analytic mean.
+
+# We can also see that the null hypothesis lnRR = 0 can be refused because the p-value is 0.0174. Because the p-value is smaller than 0.05.
+
+```
+
+
+```{r}
+predict(mam)
+
+# b) The meta-analytic mean lnRR is 0.1009. With repeated experiments, effect sizes (lnRR) are expected to range from -0.9430 to 1.1448 95% of the time, suggesting a lot of consistency between studies. 
+```
+
+
+```{r,fig.cap= "The Orchard plot shows the average lnRR of activities estimated by study."}
+# c)	Forest plot showing the mean estimate, 95% confidence interval, and prediction interval.
+orchaRd::orchard_plot(mam, group = "Study", data = data_com_news2, xlab = "lnRR", angle = 45)
+```
+
+
+#### Funnel plot 
+
+```{r, fig.cap="Funnel plot describe the relationship between sample variance and effect sizes."}
+# Make a funnel plot to visualize the data in relation to the precision.
+metafor::funnel(x = data_com_news2$yi, vi = data_com_news2$vi, yaxis = "seinv",
+    digits = 7, level = c(0.1, 0.05, 0.01), shade = c("white", "gray55", "gray 75"),
+    las = 1, xlab = "lnRR", atransf = tanh, legend = TRUE,ylim = c(1,100))
+```
+
+
+#### Time-lag plot 
+
+```{r, fig.cap="Time-lag plot describe the relationship between lnRR and publish year."}
+ggplot(data_com_news2, aes(y = yi, x = Year..print., size = 1/sqrt(vi))) + geom_point(alpha = 0.3) +
+    geom_smooth(method = lm, col = "red", show.legend = FALSE) + labs(x = "Publication Year",
+    y = "Log Response Ratio, lnRR", size = "Precision (1/SE)") +
+    theme_classic()
+
+```
+
+
+#### Formal meta-regression model that includes year as a moderator (fixed effect) to test for time-lag bias.
+
+```{r}
+mt <- rma.mv(yi ~ Year..print., V = vi, random = list(~1 | Study, ~1 | Behavioural.metric),
+    test = "t", dfs = "contain", data = data_com_news2)
+summary(mt)
+```
+
+
+```{r}
+r2_time <- orchaRd::r2_ml(mt)
+r2_time
+```
+
+
+#### Formal meta-regression model that includes inverse sampling variance to test for file-drawer biases.
+
+```{r}
+mt_1 <- rma.mv(yi ~ Year..print. + 1/vi, V = vi, random = list(~1 | Study, ~1 | Behavioural.metric),
+    test = "t", dfs = "contain", data = data_com_news2)
+summary(mt_1)
+
+```
+
+```{r}
+r2_time_1 <- orchaRd::r2_ml(mt_1)  
+r2_time_1
+
+```
+
+
+
+
+#### Explanation and discussion
+
+```{r}
+# There is a publication bias. There are a bunch of missing blank areas in the lower left corner of the funnel. The unpublished sample sizes are negatively correlated and they are based on very small sample sizes. Based on this figure, these studies failed to find significant correlations. But when the correlation volume is large enough in the positive direction, lnRR can be published even with a very small sample size.
+
+# There does seem to be a negative correlation with the year of publication. And the precision of the sampling variance of the studies is gradually improving, as we would expect, with the small sample size in the early years making the variance larger. Thus, these early studies appear to have higher effect sizes compared to later studies.
+
+# The time-lag explains 1.1% of the variation in lnRR. We have evidence of time-lag bias. As more studies accumulate, the average effect size is expected to decrease.
+
+# Here we can see that when we take into account the covariance between the two, there is no clear evidence of file drawer and time lag bias in these data. Thus, it is possible that 1/lnRR does not have a large effect on the intercept, not even an impact.
+
+
+```
+
+
+```{r}
+# The effect of experimental ocean acidification on fish behavior is indeed declining over time. However, the inverse lnRR is different from the analysis by Clement et. al. (2022). There is almost no effect on publication bias, and the year of publication has a very small effect of 0.01. By analyzing the effect of study and behavioural metric on fish behavior, we found that behavioural metric may lead to the occurrence of downward effect. In addition, the above analysis is related to the behavioural metric and study drivers' decrease in acidification effect on fish, but it is not as strong as that shown in the paper.
+
+```
+
+
